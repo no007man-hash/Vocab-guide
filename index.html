@@ -1,0 +1,659 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="theme-color" content="#FAF6EF" />
+<title>Wordfile · B1 Vocabulary Trainer</title>
+<link rel="manifest" href="./manifest.json" />
+<link rel="icon" type="image/png" sizes="192x192" href="./icon-192.png" />
+<link rel="icon" type="image/png" sizes="512x512" href="./icon-512.png" />
+<link rel="apple-touch-icon" href="./apple-touch-icon.png" />
+<style>
+  :root {
+    --paper: #FAF6EF;
+    --paper-card: #FFFDF8;
+    --ink: #1F2937;
+    --ink-soft: #4B5358;
+    --pencil: #8B8680;
+    --red: #B23A48;
+    --red-soft: #D98B92;
+    --sage: #7C9885;
+    --rule: #DAD2C0;
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body {
+    margin: 0; padding: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+    min-height: 100vh;
+    -webkit-font-smoothing: antialiased;
+  }
+  body {
+    background-image: radial-gradient(circle at 1px 1px, rgba(31,41,55,0.035) 1px, transparent 0);
+    background-size: 18px 18px;
+  }
+  #root { min-height: 100vh; }
+  .app {
+    max-width: 480px; margin: 0 auto; min-height: 100vh;
+    display: flex; flex-direction: column;
+    padding: 20px 18px 40px;
+  }
+  .header {
+    display: flex; align-items: baseline; justify-content: space-between;
+    margin-bottom: 18px; padding-bottom: 12px; border-bottom: 1px solid var(--rule);
+  }
+  .brand {
+    font-family: Georgia, 'Times New Roman', serif;
+    font-size: 26px; font-weight: 700; letter-spacing: -0.01em; color: var(--ink);
+  }
+  .brand span { color: var(--red); }
+  .tagline {
+    font-size: 11px; color: var(--pencil); text-transform: uppercase;
+    letter-spacing: 0.08em; margin-top: 2px;
+  }
+  .stat-pill {
+    font-size: 12px; color: var(--ink-soft); background: var(--paper-card);
+    border: 1px solid var(--rule); border-radius: 20px; padding: 5px 12px; white-space: nowrap;
+  }
+  .tabs { display: flex; gap: 6px; margin-bottom: 20px; }
+  .tab {
+    flex: 1; padding: 9px 6px; text-align: center; font-size: 13px; font-weight: 600;
+    border: 1px solid var(--rule); background: var(--paper-card); color: var(--ink-soft);
+    border-radius: 9px; cursor: pointer; transition: all 0.15s ease;
+  }
+  .tab.active { background: var(--ink); color: var(--paper); border-color: var(--ink); }
+  .tab:focus-visible, button:focus-visible, .choice:focus-visible { outline: 2px solid var(--red); outline-offset: 2px; }
+  .batch-row { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 6px; margin-bottom: 16px; scrollbar-width: thin; }
+  .batch-chip {
+    flex: 0 0 auto; padding: 7px 14px; border-radius: 20px; border: 1px solid var(--rule);
+    background: var(--paper-card); font-size: 12.5px; font-weight: 600; color: var(--ink-soft);
+    cursor: pointer; white-space: nowrap;
+  }
+  .batch-chip.active { background: var(--red); border-color: var(--red); color: #fff; }
+  .batch-chip .dot {
+    display: inline-block; width: 6px; height: 6px; border-radius: 50%;
+    background: var(--sage); margin-left: 6px; vertical-align: middle;
+  }
+  .card-zone { display: flex; flex-direction: column; align-items: center; flex: 1; }
+  .progress-line { width: 100%; display: flex; justify-content: space-between; font-size: 12px; color: var(--pencil); margin-bottom: 10px; }
+  .progress-track { width: 100%; height: 4px; background: var(--rule); border-radius: 4px; margin-bottom: 22px; overflow: hidden; }
+  .progress-fill { height: 100%; background: var(--red); border-radius: 4px; transition: width 0.3s ease; }
+  .card-scene { width: 100%; max-width: 360px; height: 320px; perspective: 1400px; margin-bottom: 22px; }
+  .card-flip {
+    width: 100%; height: 100%; position: relative; transform-style: preserve-3d;
+    transition: transform 0.5s cubic-bezier(.4,.2,.2,1); cursor: pointer;
+  }
+  .card-flip.flipped { transform: rotateY(180deg); }
+  .card-face {
+    position: absolute; inset: 0; backface-visibility: hidden; border-radius: 4px;
+    background: var(--paper-card);
+    box-shadow: 0 1px 0 #fff, 0 2px 0 var(--rule), 0 8px 16px -8px rgba(31,41,55,0.25);
+    padding: 28px 26px; display: flex; flex-direction: column; border: 1px solid var(--rule);
+  }
+  .card-tab {
+    position: absolute; top: -1px; right: 22px; background: var(--sage); color: #fff;
+    font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em;
+    padding: 4px 10px 5px; border-radius: 0 0 6px 6px;
+  }
+  .card-face.back { transform: rotateY(180deg); }
+  .card-index-no { font-size: 11px; color: var(--pencil); margin-top: 4px; }
+  .card-word { font-family: Georgia, 'Times New Roman', serif; font-size: 38px; font-weight: 700; color: var(--ink); line-height: 1.1; margin-top: 28px; }
+  .card-pos { font-size: 13px; font-style: italic; color: var(--red); margin-top: 8px; }
+  .card-hint { margin-top: auto; font-size: 11.5px; color: var(--pencil); text-align: center; text-transform: uppercase; letter-spacing: 0.05em; }
+  .card-meaning-label { font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--sage); font-weight: 700; margin-top: 30px; }
+  .card-meaning { font-size: 19px; color: var(--ink); margin-top: 8px; line-height: 1.35; font-weight: 500; }
+  .card-example { font-size: 14px; color: var(--ink-soft); font-style: italic; margin-top: 14px; line-height: 1.4; border-top: 1px dashed var(--rule); padding-top: 12px; }
+  .controls { display: flex; gap: 10px; width: 100%; max-width: 360px; }
+  .btn { flex: 1; padding: 13px; border-radius: 8px; border: none; font-size: 14px; font-weight: 700; cursor: pointer; transition: transform 0.1s ease, opacity 0.15s ease; }
+  .btn:active { transform: scale(0.97); }
+  .btn-tricky { background: var(--paper-card); border: 1.5px solid var(--red); color: var(--red); }
+  .btn-known { background: var(--sage); color: #fff; }
+  .btn-nav { background: var(--ink); color: var(--paper); }
+  .btn-nav:disabled { opacity: 0.3; cursor: default; }
+  .nav-row { display: flex; gap: 10px; width: 100%; max-width: 360px; margin-top: 10px; }
+  .quiz-wrap { width: 100%; max-width: 360px; margin: 0 auto; }
+  .quiz-q-no { font-size: 12px; color: var(--pencil); margin-bottom: 6px; }
+  .quiz-prompt { background: var(--paper-card); border: 1px solid var(--rule); border-radius: 10px; padding: 22px; margin-bottom: 18px; box-shadow: 0 2px 0 var(--rule); }
+  .quiz-prompt-label { font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--pencil); margin-bottom: 8px; }
+  .quiz-prompt-text { font-family: Georgia, serif; font-size: 22px; font-weight: 700; color: var(--ink); line-height: 1.3; }
+  .choice {
+    width: 100%; text-align: left; background: var(--paper-card); border: 1.5px solid var(--rule);
+    border-radius: 9px; padding: 13px 16px; font-size: 14.5px; color: var(--ink);
+    margin-bottom: 10px; cursor: pointer; transition: all 0.15s ease;
+  }
+  .choice:hover { border-color: var(--ink-soft); }
+  .choice.correct { background: #EEF4EE; border-color: var(--sage); color: #2F4631; }
+  .choice.wrong { background: #FBEAEA; border-color: var(--red); color: var(--red); }
+  .choice:disabled { cursor: default; }
+  .quiz-feedback { font-size: 13px; margin-top: 4px; margin-bottom: 14px; min-height: 18px; color: var(--sage); font-weight: 600; }
+  .quiz-feedback.bad { color: var(--red); }
+  .quiz-summary { text-align: center; padding: 30px 20px; }
+  .quiz-summary .big { font-family: Georgia, serif; font-size: 52px; font-weight: 700; color: var(--red); }
+  .quiz-summary .label { font-size: 13px; color: var(--pencil); text-transform: uppercase; letter-spacing: 0.06em; margin-top: 4px; }
+  .topic-list { width: 100%; }
+  .topic-row { display: flex; justify-content: space-between; align-items: center; padding: 14px 4px; border-bottom: 1px solid var(--rule); cursor: pointer; }
+  .topic-row:hover .topic-name { color: var(--red); }
+  .topic-name { font-size: 15px; font-weight: 600; color: var(--ink); }
+  .topic-count { font-size: 12px; color: var(--pencil); }
+  .empty-state { text-align: center; padding: 60px 20px; color: var(--pencil); font-size: 14px; }
+  .back-link { text-align: left; margin-bottom: 14px; cursor: pointer; font-size: 13px; color: var(--pencil); background: none; border: none; padding: 0; }
+  .reset-row { text-align: center; margin-top: 24px; }
+  .reset-link { font-size: 11.5px; color: var(--pencil); background: none; border: none; text-decoration: underline; cursor: pointer; }
+  @media (prefers-reduced-motion: reduce) { .card-flip, .btn, .choice { transition: none !important; } }
+</style>
+</head>
+<body>
+<div id="root"></div>
+
+<script type="text/babel" data-presets="env,react">
+const { useState, useEffect, useMemo, useCallback } = React;
+
+/* ============ WORD DATA ============ */
+const RAW_WORDS = [
+{w:"ability",pos:"n",m:"the skill or power to do something",ex:"She has the ability to speak three languages.",batch:1,topic:"General"},
+{w:"absent",pos:"adj",m:"not present; away",ex:"He was absent from school yesterday.",batch:1,topic:"Education"},
+{w:"accent",pos:"n",m:"the way someone pronounces words, often showing where they're from",ex:"She has a beautiful French accent.",batch:1,topic:"Language"},
+{w:"accommodation",pos:"n",m:"a place to stay or live",ex:"We booked accommodation near the beach.",batch:1,topic:"Travel"},
+{w:"accurate",pos:"adj",m:"correct and exact",ex:"His description was very accurate.",batch:1,topic:"General"},
+{w:"achieve",pos:"v",m:"to succeed in doing something",ex:"She achieved her goal of running a marathon.",batch:1,topic:"General"},
+{w:"admire",pos:"v",m:"to respect or think highly of someone",ex:"I admire her courage.",batch:1,topic:"Feelings"},
+{w:"advantage",pos:"n",m:"a benefit; something that helps you",ex:"Speaking two languages is a big advantage.",batch:1,topic:"General"},
+{w:"advice",pos:"n",m:"a suggestion about what someone should do",ex:"Can you give me some advice?",batch:1,topic:"General"},
+{w:"afford",pos:"v",m:"to have enough money for something",ex:"We can't afford a new car right now.",batch:1,topic:"Shopping"},
+{w:"amazing",pos:"adj",m:"very surprising or impressive, in a good way",ex:"The view from the mountain was amazing.",batch:1,topic:"Feelings"},
+{w:"ambition",pos:"n",m:"a strong desire to achieve something",ex:"His ambition is to become a doctor.",batch:1,topic:"Work"},
+{w:"ancient",pos:"adj",m:"very old; from a long time ago",ex:"They visited some ancient ruins.",batch:2,topic:"General"},
+{w:"announce",pos:"v",m:"to tell people something officially or publicly",ex:"They announced the winner on stage.",batch:2,topic:"General"},
+{w:"annoy",pos:"v",m:"to make someone a little angry",ex:"Loud music annoys my neighbour.",batch:2,topic:"Feelings"},
+{w:"apologise",pos:"v",m:"to say you are sorry",ex:"He apologised for being late.",batch:2,topic:"General"},
+{w:"appear",pos:"v",m:"to start to be seen; to seem",ex:"A figure appeared at the door.",batch:2,topic:"General"},
+{w:"appointment",pos:"n",m:"an arranged time to meet someone",ex:"I have a dentist's appointment at 3pm.",batch:2,topic:"Health"},
+{w:"architect",pos:"n",m:"a person who designs buildings",ex:"The architect designed a glass tower.",batch:2,topic:"Work"},
+{w:"argue",pos:"v",m:"to disagree with someone, often angrily",ex:"They argued about money.",batch:2,topic:"Language"},
+{w:"arrest",pos:"v",m:"to take someone by police for a suspected crime",ex:"The police arrested the suspect.",batch:2,topic:"General"},
+{w:"ashamed",pos:"adj",m:"feeling guilty or embarrassed about something",ex:"He felt ashamed of his mistake.",batch:2,topic:"Feelings"},
+{w:"athlete",pos:"n",m:"a person who is good at sports",ex:"She trains like a professional athlete.",batch:2,topic:"Sport"},
+{w:"atmosphere",pos:"n",m:"the mood or feeling of a place; also the air around Earth",ex:"The cafe has a cosy atmosphere.",batch:2,topic:"General"},
+{w:"background",pos:"n",m:"a person's history, or the back part of a scene",ex:"She comes from a musical background.",batch:3,topic:"General"},
+{w:"balcony",pos:"n",m:"a platform outside an upper window of a building",ex:"We had breakfast on the balcony.",batch:3,topic:"House and Home"},
+{w:"bargain",pos:"n",m:"something bought cheaply; a good deal",ex:"These shoes were a real bargain.",batch:3,topic:"Shopping"},
+{w:"behave",pos:"v",m:"to act in a particular way",ex:"The children behaved well at the party.",batch:3,topic:"General"},
+{w:"belong",pos:"v",m:"to be owned by, or to be a member of",ex:"This book belongs to my sister.",batch:3,topic:"General"},
+{w:"biography",pos:"n",m:"the true story of someone's life, written by another person",ex:"I'm reading a biography of Einstein.",batch:3,topic:"Entertainment"},
+{w:"blame",pos:"v",m:"to say someone is responsible for something bad",ex:"Don't blame me for the mistake.",batch:3,topic:"General"},
+{w:"boring",pos:"adj",m:"not interesting at all",ex:"The lecture was so boring I fell asleep.",batch:3,topic:"Feelings"},
+{w:"borrow",pos:"v",m:"to take something temporarily, planning to return it",ex:"Can I borrow your pen?",batch:3,topic:"General"},
+{w:"brave",pos:"adj",m:"showing no fear in a dangerous situation",ex:"It was brave of him to speak up.",batch:3,topic:"Feelings"},
+{w:"breathe",pos:"v",m:"to take air into and out of your lungs",ex:"Breathe deeply and relax.",batch:3,topic:"Health"},
+{w:"brilliant",pos:"adj",m:"extremely good or clever",ex:"That's a brilliant idea!",batch:3,topic:"Feelings"},
+{w:"calm",pos:"adj",m:"not worried, angry, or excited",ex:"She stayed calm during the emergency.",batch:4,topic:"Feelings"},
+{w:"career",pos:"n",m:"the jobs a person does throughout their working life",ex:"He built a career in journalism.",batch:4,topic:"Work"},
+{w:"careless",pos:"adj",m:"not paying enough attention; making mistakes",ex:"That was a careless mistake.",batch:4,topic:"Feelings"},
+{w:"celebrate",pos:"v",m:"to do something enjoyable for a special occasion",ex:"We celebrated her birthday at home.",batch:4,topic:"Entertainment"},
+{w:"challenge",pos:"n",m:"a difficult task that tests your ability",ex:"Learning a new language is a challenge.",batch:4,topic:"General"},
+{w:"charity",pos:"n",m:"an organisation that helps people in need",ex:"She donates to charity every month.",batch:4,topic:"General"},
+{w:"cheerful",pos:"adj",m:"happy and positive",ex:"He's always cheerful in the morning.",batch:4,topic:"Feelings"},
+{w:"clever",pos:"adj",m:"intelligent; quick to learn or understand",ex:"That's a clever solution.",batch:4,topic:"Feelings"},
+{w:"comfortable",pos:"adj",m:"giving physical ease; relaxed",ex:"This chair is very comfortable.",batch:4,topic:"Feelings"},
+{w:"complain",pos:"v",m:"to say you are unhappy about something",ex:"He complained about the noise.",batch:4,topic:"General"},
+{w:"confident",pos:"adj",m:"sure of your own abilities",ex:"She felt confident before the exam.",batch:4,topic:"Feelings"},
+{w:"convince",pos:"v",m:"to make someone believe or agree to something",ex:"He convinced me to try sushi.",batch:4,topic:"General"},
+{w:"damage",pos:"v",m:"to harm or break something",ex:"The storm damaged the roof.",batch:5,topic:"General"},
+{w:"decision",pos:"n",m:"a choice you make after thinking about it",ex:"It was a difficult decision to make.",batch:5,topic:"General"},
+{w:"delighted",pos:"adj",m:"very pleased",ex:"We were delighted with the news.",batch:5,topic:"Feelings"},
+{w:"depend",pos:"v",m:"to rely on someone or something; to be decided by",ex:"It depends on the weather.",batch:5,topic:"General"},
+{w:"deserve",pos:"v",m:"to have earned or be entitled to something",ex:"You deserve a holiday after all that work.",batch:5,topic:"General"},
+{w:"determined",pos:"adj",m:"having made a firm decision; not giving up",ex:"She is determined to win.",batch:5,topic:"Feelings"},
+{w:"disappointed",pos:"adj",m:"sad because something was not as good as hoped",ex:"He was disappointed with his exam result.",batch:5,topic:"Feelings"},
+{w:"discover",pos:"v",m:"to find something for the first time",ex:"Scientists discovered a new species.",batch:5,topic:"General"},
+{w:"disturb",pos:"v",m:"to interrupt or upset someone's peace",ex:"Sorry to disturb you, can I ask a question?",batch:5,topic:"General"},
+{w:"doubt",pos:"n",m:"a feeling of not being sure about something",ex:"I have my doubts about this plan.",batch:5,topic:"General"},
+{w:"dull",pos:"adj",m:"not interesting or exciting",ex:"It was a dull, grey afternoon.",batch:5,topic:"Feelings"},
+{w:"during",pos:"prep",m:"throughout a period of time",ex:"She fell asleep during the film.",batch:5,topic:"Time"},
+{w:"earn",pos:"v",m:"to receive money for work done",ex:"She earns a good salary.",batch:6,topic:"Work"},
+{w:"effort",pos:"n",m:"physical or mental energy used to do something",ex:"He made a big effort to be on time.",batch:6,topic:"General"},
+{w:"embarrassed",pos:"adj",m:"feeling shy or awkward",ex:"I felt embarrassed when I forgot her name.",batch:6,topic:"Feelings"},
+{w:"encourage",pos:"v",m:"to give someone confidence to do something",ex:"My teacher encouraged me to keep practising.",batch:6,topic:"General"},
+{w:"enormous",pos:"adj",m:"very large",ex:"They live in an enormous house.",batch:6,topic:"General"},
+{w:"environment",pos:"n",m:"the natural world; the surroundings of a place",ex:"We should protect the environment.",batch:6,topic:"Environment"},
+{w:"escape",pos:"v",m:"to get free from a dangerous place",ex:"The bird escaped from its cage.",batch:6,topic:"General"},
+{w:"exhausted",pos:"adj",m:"extremely tired",ex:"I was exhausted after the long flight.",batch:6,topic:"Health"},
+{w:"experience",pos:"n",m:"knowledge gained from doing something; an event lived through",ex:"It was an unforgettable experience.",batch:6,topic:"General"},
+{w:"explore",pos:"v",m:"to travel to find out about a place",ex:"They explored the old city on foot.",batch:6,topic:"Travel"},
+{w:"extraordinary",pos:"adj",m:"very unusual or remarkable",ex:"She has an extraordinary talent for music.",batch:6,topic:"General"},
+{w:"exist",pos:"v",m:"to be real; to be present in the world",ex:"Does life exist on other planets?",batch:6,topic:"General"},
+{w:"familiar",pos:"adj",m:"well known to you; recognisable",ex:"That song sounds familiar.",batch:7,topic:"General"},
+{w:"fascinating",pos:"adj",m:"extremely interesting",ex:"The museum had a fascinating exhibit.",batch:7,topic:"Feelings"},
+{w:"fault",pos:"n",m:"responsibility for something wrong",ex:"It wasn't my fault the bus was late.",batch:7,topic:"General"},
+{w:"fond",pos:"adj",m:"liking someone or something",ex:"I'm very fond of my grandmother.",batch:7,topic:"Feelings"},
+{w:"forecast",pos:"n",m:"a prediction, especially of weather",ex:"The forecast says it will rain tomorrow.",batch:7,topic:"Weather"},
+{w:"forgive",pos:"v",m:"to stop being angry about something someone did",ex:"She forgave him for being late.",batch:7,topic:"General"},
+{w:"frightened",pos:"adj",m:"feeling fear",ex:"The child was frightened of the dark.",batch:7,topic:"Feelings"},
+{w:"furious",pos:"adj",m:"extremely angry",ex:"He was furious when his bike was stolen.",batch:7,topic:"Feelings"},
+{w:"fortunately",pos:"adv",m:"luckily",ex:"Fortunately, no one was hurt in the accident.",batch:7,topic:"General"},
+{w:"frequent",pos:"adj",m:"happening often",ex:"There are frequent buses to the city centre.",batch:7,topic:"Travel"},
+{w:"fuel",pos:"n",m:"material burned for energy, like petrol",ex:"The car ran out of fuel.",batch:7,topic:"Travel"},
+{w:"fancy",pos:"v",m:"to want or feel like having something",ex:"Do you fancy going out tonight?",batch:7,topic:"General"},
+{w:"generous",pos:"adj",m:"willing to give freely",ex:"It was generous of you to help.",batch:8,topic:"Feelings"},
+{w:"genuine",pos:"adj",m:"real; not fake",ex:"Is that bag genuine leather?",batch:8,topic:"General"},
+{w:"gorgeous",pos:"adj",m:"extremely beautiful or pleasant",ex:"The sunset was gorgeous.",batch:8,topic:"Feelings"},
+{w:"grateful",pos:"adj",m:"feeling thankful",ex:"I'm grateful for your help.",batch:8,topic:"Feelings"},
+{w:"guilty",pos:"adj",m:"having done something wrong; feeling responsible for a wrong",ex:"He felt guilty about lying.",batch:8,topic:"Feelings"},
+{w:"glance",pos:"v",m:"to look quickly at something",ex:"She glanced at her watch.",batch:8,topic:"General"},
+{w:"grab",pos:"v",m:"to take hold of something suddenly",ex:"He grabbed his bag and ran.",batch:8,topic:"General"},
+{w:"government",pos:"n",m:"the group of people who officially run a country",ex:"The government announced new rules.",batch:8,topic:"General"},
+{w:"graduation",pos:"n",m:"completion of a course of study",ex:"Her graduation was a proud day for the family.",batch:8,topic:"Education"},
+{w:"grant",pos:"n",m:"money given for a particular purpose, like study",ex:"He got a grant to study abroad.",batch:8,topic:"Education"},
+{w:"guard",pos:"n",m:"a person who protects a place or people",ex:"A guard stood at the gate.",batch:8,topic:"Work"},
+{w:"guess",pos:"v",m:"to give an answer without being sure",ex:"Can you guess how old she is?",batch:8,topic:"General"},
+{w:"habit",pos:"n",m:"something you do regularly, often without thinking",ex:"Biting your nails is a bad habit.",batch:9,topic:"General"},
+{w:"handle",pos:"v",m:"to deal with a situation or object",ex:"She handled the complaint well.",batch:9,topic:"General"},
+{w:"harbour",pos:"n",m:"a place where boats are kept safe near the coast",ex:"The fishing boats returned to the harbour.",batch:9,topic:"Places"},
+{w:"hesitate",pos:"v",m:"to pause before doing or saying something, often from doubt",ex:"He hesitated before answering.",batch:9,topic:"General"},
+{w:"hire",pos:"v",m:"to pay to use something temporarily, or to employ someone",ex:"We hired a car for the weekend.",batch:9,topic:"Travel"},
+{w:"honest",pos:"adj",m:"telling the truth; not deceiving",ex:"Please be honest with me.",batch:9,topic:"Feelings"},
+{w:"hopeless",pos:"adj",m:"having no hope or skill at something",ex:"I'm hopeless at maths.",batch:9,topic:"Feelings"},
+{w:"horrible",pos:"adj",m:"very unpleasant",ex:"The weather was horrible all week.",batch:9,topic:"Feelings"},
+{w:"hug",pos:"v",m:"to put your arms around someone affectionately",ex:"She hugged her friend at the airport.",batch:9,topic:"General"},
+{w:"humid",pos:"adj",m:"having a lot of moisture in the air",ex:"It's very humid in summer here.",batch:9,topic:"Weather"},
+{w:"hunger",pos:"n",m:"the feeling of needing food",ex:"The charity works to end hunger.",batch:9,topic:"General"},
+{w:"hurry",pos:"v",m:"to move or act quickly",ex:"We need to hurry or we'll miss the train.",batch:9,topic:"General"},
+{w:"identify",pos:"v",m:"to recognise or name someone or something",ex:"Can you identify the man in the photo?",batch:10,topic:"General"},
+{w:"imagination",pos:"n",m:"the ability to form ideas or pictures in your mind",ex:"Children have great imagination.",batch:10,topic:"General"},
+{w:"impossible",pos:"adj",m:"not able to happen or be done",ex:"It's impossible to finish this today.",batch:10,topic:"General"},
+{w:"improve",pos:"v",m:"to get better, or make something better",ex:"Her English has improved a lot.",batch:10,topic:"Education"},
+{w:"include",pos:"v",m:"to have as part of something",ex:"The price includes breakfast.",batch:10,topic:"General"},
+{w:"independent",pos:"adj",m:"not needing help from others; free from control",ex:"She became independent after moving out.",batch:10,topic:"Feelings"},
+{w:"injure",pos:"v",m:"to hurt physically",ex:"He injured his leg playing football.",batch:10,topic:"Health"},
+{w:"insist",pos:"v",m:"to demand something firmly",ex:"She insisted on paying for dinner.",batch:10,topic:"Language"},
+{w:"intelligent",pos:"adj",m:"able to learn and understand well",ex:"He's an intelligent and curious student.",batch:10,topic:"Feelings"},
+{w:"interrupt",pos:"v",m:"to stop someone while they are speaking or doing something",ex:"Sorry to interrupt, but you have a call.",batch:10,topic:"Language"},
+{w:"introduce",pos:"v",m:"to make people known to each other for the first time",ex:"Let me introduce you to my friend.",batch:10,topic:"General"},
+{w:"jealous",pos:"adj",m:"feeling envious of someone",ex:"He was jealous of his brother's new bike.",batch:10,topic:"Feelings"},
+{w:"keen",pos:"adj",m:"very interested in or enthusiastic about something",ex:"She's keen on cycling.",batch:11,topic:"Feelings"},
+{w:"kindness",pos:"n",m:"the quality of being friendly and considerate",ex:"Thank you for your kindness.",batch:11,topic:"Feelings"},
+{w:"lack",pos:"n",m:"the state of not having enough of something",ex:"There's a lack of fresh water in the area.",batch:11,topic:"General"},
+{w:"landscape",pos:"n",m:"the visible features of an area of land",ex:"The painting shows a mountain landscape.",batch:11,topic:"Nature"},
+{w:"lazy",pos:"adj",m:"unwilling to work or make an effort",ex:"Don't be lazy, finish your homework!",batch:11,topic:"Feelings"},
+{w:"limited",pos:"adj",m:"restricted in amount or extent",ex:"We have a limited choice of colours.",batch:11,topic:"General"},
+{w:"lively",pos:"adj",m:"full of energy and enthusiasm",ex:"The market has a lively atmosphere.",batch:11,topic:"Feelings"},
+{w:"loan",pos:"n",m:"money borrowed that must be paid back",ex:"He took out a loan to buy a car.",batch:11,topic:"General"},
+{w:"locate",pos:"v",m:"to find the exact position of something",ex:"The station is located in the city centre.",batch:11,topic:"Places"},
+{w:"loneliness",pos:"n",m:"the state of feeling alone and unhappy about it",ex:"She felt loneliness after moving to a new city.",batch:11,topic:"Feelings"},
+{w:"luxury",pos:"n",m:"great comfort, especially involving expensive things",ex:"They stayed in a luxury hotel.",batch:11,topic:"General"},
+{w:"loud",pos:"adj",m:"making a lot of noise",ex:"The music was too loud.",batch:11,topic:"General"},
+{w:"manage",pos:"v",m:"to succeed in doing something difficult; to be in charge of",ex:"She manages a small team.",batch:12,topic:"Work"},
+{w:"marvellous",pos:"adj",m:"wonderful; excellent",ex:"We had a marvellous holiday.",batch:12,topic:"Feelings"},
+{w:"mention",pos:"v",m:"to refer to something briefly in speech or writing",ex:"She mentioned she was moving abroad.",batch:12,topic:"Language"},
+{w:"miserable",pos:"adj",m:"very unhappy",ex:"He felt miserable after losing the match.",batch:12,topic:"Feelings"},
+{w:"mood",pos:"n",m:"the way someone feels at a particular time",ex:"She's in a good mood today.",batch:12,topic:"Feelings"},
+{w:"motivate",pos:"v",m:"to give someone a reason to do something",ex:"Good teachers motivate their students.",batch:12,topic:"Education"},
+{w:"mysterious",pos:"adj",m:"strange and not easily explained",ex:"There was a mysterious noise in the attic.",batch:12,topic:"General"},
+{w:"manner",pos:"n",m:"the way something is done; way of behaving",ex:"She spoke in a calm manner.",batch:12,topic:"General"},
+{w:"medium",pos:"adj",m:"middle in size or amount",ex:"I'd like a medium coffee, please.",batch:12,topic:"General"},
+{w:"mild",pos:"adj",m:"not strong or severe; gentle",ex:"We had a mild winter this year.",batch:12,topic:"Weather"},
+{w:"modest",pos:"adj",m:"not boastful about your abilities or achievements",ex:"Despite her success, she stayed modest.",batch:12,topic:"Feelings"},
+{w:"motivation",pos:"n",m:"a reason for doing something; enthusiasm to act",ex:"He lost motivation after the injury.",batch:12,topic:"General"},
+];
+
+const seenKeys = new Set();
+const ALL_WORDS = RAW_WORDS.filter((w) => {
+  const key = w.w + w.batch;
+  if (seenKeys.has(key)) return false;
+  seenKeys.add(key);
+  return true;
+});
+
+const BATCH_NUMBERS = [...new Set(ALL_WORDS.map((w) => w.batch))].sort((a, b) => a - b);
+const TOPICS = [...new Set(ALL_WORDS.map((w) => w.topic))].sort();
+
+const STORAGE_KEY = "wordfile-progress-v1";
+
+/* ============ localStorage helpers (works offline, no server needed) ============ */
+function loadProgress() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (raw) return JSON.parse(raw);
+  } catch (e) { /* ignore */ }
+  return { known: {}, tricky: {}, lastBatch: 1 };
+}
+function saveProgress(progress) {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(progress));
+  } catch (e) {
+    console.error("Could not save progress", e);
+  }
+}
+
+/* ============ Components ============ */
+function Header({ knownCount, total }) {
+  return (
+    <div className="header">
+      <div>
+        <div className="brand">Word<span>file</span></div>
+        <div className="tagline">B1 Vocabulary Trainer</div>
+      </div>
+      <div className="stat-pill">{knownCount} / {total} known</div>
+    </div>
+  );
+}
+
+function Tabs({ active, setActive }) {
+  const tabs = [
+    { id: "learn", label: "Learn" },
+    { id: "quiz", label: "Quiz" },
+    { id: "topics", label: "Topics" },
+  ];
+  return (
+    <div className="tabs">
+      {tabs.map((t) => (
+        <div
+          key={t.id}
+          className={"tab" + (active === t.id ? " active" : "")}
+          onClick={() => setActive(t.id)}
+          role="button"
+          tabIndex={0}
+          onKeyDown={(e) => { if (e.key === "Enter") setActive(t.id); }}
+        >
+          {t.label}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function BatchSelector({ batches, currentBatch, setCurrentBatch, progress }) {
+  return (
+    <div className="batch-row">
+      {batches.map((b) => {
+        const wordsInBatch = ALL_WORDS.filter((w) => w.batch === b);
+        const allKnown = wordsInBatch.every((w) => progress.known[w.w + w.batch]);
+        return (
+          <div
+            key={b}
+            className={"batch-chip" + (currentBatch === b ? " active" : "")}
+            onClick={() => setCurrentBatch(b)}
+            role="button"
+            tabIndex={0}
+          >
+            Day {b}
+            {allKnown && <span className="dot" />}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+function Flashcards({ words, progress, onMark }) {
+  const [index, setIndex] = useState(0);
+  const [flipped, setFlipped] = useState(false);
+
+  useEffect(() => { setIndex(0); setFlipped(false); }, [words]);
+
+  if (words.length === 0) {
+    return <div className="empty-state">No words in this set yet.</div>;
+  }
+
+  const safeIndex = Math.min(index, words.length - 1);
+  const word = words[safeIndex];
+  const key = word.w + word.batch;
+  const isKnown = !!progress.known[key];
+
+  const goNext = () => { setFlipped(false); setIndex((i) => Math.min(i + 1, words.length - 1)); };
+  const goPrev = () => { setFlipped(false); setIndex((i) => Math.max(i - 1, 0)); };
+
+  return (
+    <div className="card-zone">
+      <div className="progress-line">
+        <span>Card {safeIndex + 1} of {words.length}</span>
+        <span>{isKnown ? "✓ Known" : "Tap card to flip"}</span>
+      </div>
+      <div className="progress-track">
+        <div className="progress-fill" style={{ width: `${((safeIndex + 1) / words.length) * 100}%` }} />
+      </div>
+      <div className="card-scene">
+        <div
+          className={"card-flip" + (flipped ? " flipped" : "")}
+          onClick={() => setFlipped((f) => !f)}
+          role="button"
+          tabIndex={0}
+          onKeyDown={(e) => { if (e.key === "Enter") setFlipped((f) => !f); }}
+        >
+          <div className="card-face front">
+            <div className="card-tab">{word.topic}</div>
+            <div className="card-index-no">No. {ALL_WORDS.indexOf(word) + 1}</div>
+            <div className="card-word">{word.w}</div>
+            <div className="card-pos">{word.pos}</div>
+            <div className="card-hint">Tap to reveal meaning</div>
+          </div>
+          <div className="card-face back">
+            <div className="card-tab">{word.topic}</div>
+            <div className="card-meaning-label">Meaning</div>
+            <div className="card-meaning">{word.m}</div>
+            <div className="card-example">"{word.ex}"</div>
+          </div>
+        </div>
+      </div>
+      <div className="controls">
+        <button className="btn btn-tricky" onClick={() => onMark(key, "tricky")}>Still tricky</button>
+        <button className="btn btn-known" onClick={() => { onMark(key, "known"); goNext(); }}>I know this</button>
+      </div>
+      <div className="nav-row">
+        <button className="btn btn-nav" onClick={goPrev} disabled={safeIndex === 0}>← Previous</button>
+        <button className="btn btn-nav" onClick={goNext} disabled={safeIndex === words.length - 1}>Next →</button>
+      </div>
+    </div>
+  );
+}
+
+function buildQuizQuestions(words, allWords) {
+  const shuffled = [...words].sort(() => Math.random() - 0.5);
+  return shuffled.map((correct) => {
+    const distractors = allWords
+      .filter((w) => w.w !== correct.w)
+      .sort(() => Math.random() - 0.5)
+      .slice(0, 3)
+      .map((w) => w.m);
+    const options = [...distractors, correct.m].sort(() => Math.random() - 0.5);
+    return { word: correct, options, answer: correct.m };
+  });
+}
+
+function Quiz({ words, onMark }) {
+  const [questions, setQuestions] = useState(() => buildQuizQuestions(words, ALL_WORDS));
+  const [qIndex, setQIndex] = useState(0);
+  const [selected, setSelected] = useState(null);
+  const [score, setScore] = useState(0);
+  const [done, setDone] = useState(false);
+
+  useEffect(() => {
+    setQuestions(buildQuizQuestions(words, ALL_WORDS));
+    setQIndex(0); setSelected(null); setScore(0); setDone(false);
+  }, [words]);
+
+  if (words.length === 0) {
+    return <div className="empty-state">No words in this set yet.</div>;
+  }
+
+  if (done) {
+    return (
+      <div className="quiz-wrap">
+        <div className="quiz-summary">
+          <div className="big">{score}/{questions.length}</div>
+          <div className="label">Correct answers</div>
+        </div>
+        <button className="btn btn-nav" style={{ width: "100%" }} onClick={() => {
+          setQuestions(buildQuizQuestions(words, ALL_WORDS));
+          setQIndex(0); setSelected(null); setScore(0); setDone(false);
+        }}>Try again</button>
+      </div>
+    );
+  }
+
+  const q = questions[qIndex];
+  const key = q.word.w + q.word.batch;
+
+  const handleSelect = (opt) => {
+    if (selected) return;
+    setSelected(opt);
+    if (opt === q.answer) { setScore((s) => s + 1); onMark(key, "known"); }
+    else { onMark(key, "tricky"); }
+  };
+  const handleNext = () => {
+    if (qIndex + 1 >= questions.length) setDone(true);
+    else { setQIndex((i) => i + 1); setSelected(null); }
+  };
+
+  return (
+    <div className="quiz-wrap">
+      <div className="quiz-q-no">Question {qIndex + 1} of {questions.length}</div>
+      <div className="quiz-prompt">
+        <div className="quiz-prompt-label">What does this word mean?</div>
+        <div className="quiz-prompt-text">{q.word.w} <span style={{ fontSize: "14px", fontStyle: "italic", color: "#8B8680" }}>({q.word.pos})</span></div>
+      </div>
+      {q.options.map((opt, i) => {
+        let cls = "choice";
+        if (selected) {
+          if (opt === q.answer) cls += " correct";
+          else if (opt === selected) cls += " wrong";
+        }
+        return (
+          <button key={i} className={cls} disabled={!!selected} onClick={() => handleSelect(opt)}>
+            {opt}
+          </button>
+        );
+      })}
+      <div className={"quiz-feedback" + (selected && selected !== q.answer ? " bad" : "")}>
+        {selected ? (selected === q.answer ? "Correct! Nicely done." : "Not quite — review the highlighted answer.") : "\u00A0"}
+      </div>
+      {selected && (
+        <button className="btn btn-nav" style={{ width: "100%" }} onClick={handleNext}>
+          {qIndex + 1 >= questions.length ? "See results" : "Next question →"}
+        </button>
+      )}
+    </div>
+  );
+}
+
+function TopicsView({ topics, onSelectTopic }) {
+  return (
+    <div className="topic-list">
+      {topics.map((t) => {
+        const count = ALL_WORDS.filter((w) => w.topic === t).length;
+        return (
+          <div key={t} className="topic-row" onClick={() => onSelectTopic(t)} role="button" tabIndex={0}>
+            <span className="topic-name">{t}</span>
+            <span className="topic-count">{count} words →</span>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+function App() {
+  const [activeTab, setActiveTab] = useState("learn");
+  const [currentBatch, setCurrentBatch] = useState(1);
+  const [selectedTopic, setSelectedTopic] = useState(null);
+  const [progress, setProgress] = useState(() => loadProgress());
+
+  useEffect(() => {
+    if (progress.lastBatch) setCurrentBatch(progress.lastBatch);
+    // eslint-disable-next-line
+  }, []);
+
+  const handleMark = useCallback((key, status) => {
+    setProgress((prev) => {
+      const next = { ...prev, known: { ...prev.known }, tricky: { ...prev.tricky } };
+      if (status === "known") { next.known[key] = true; delete next.tricky[key]; }
+      else { next.tricky[key] = true; delete next.known[key]; }
+      saveProgress(next);
+      return next;
+    });
+  }, []);
+
+  const setCurrentBatchAndSave = useCallback((b) => {
+    setCurrentBatch(b);
+    setSelectedTopic(null);
+    setProgress((prev) => {
+      const next = { ...prev, lastBatch: b };
+      saveProgress(next);
+      return next;
+    });
+  }, []);
+
+  const activeWords = useMemo(() => {
+    if (activeTab === "topics" && selectedTopic) {
+      return ALL_WORDS.filter((w) => w.topic === selectedTopic);
+    }
+    return ALL_WORDS.filter((w) => w.batch === currentBatch);
+  }, [currentBatch, selectedTopic, activeTab]);
+
+  const knownCount = Object.keys(progress.known).length;
+
+  const handleReset = () => {
+    if (window.confirm("Reset all your progress? This can't be undone.")) {
+      const fresh = { known: {}, tricky: {}, lastBatch: 1 };
+      setProgress(fresh);
+      saveProgress(fresh);
+      setCurrentBatch(1);
+    }
+  };
+
+  return (
+    <div className="app">
+      <Header knownCount={knownCount} total={ALL_WORDS.length} />
+      <Tabs active={activeTab} setActive={(t) => { setActiveTab(t); if (t !== "topics") setSelectedTopic(null); }} />
+
+      {activeTab === "learn" && (
+        <>
+          <BatchSelector batches={BATCH_NUMBERS} currentBatch={currentBatch} setCurrentBatch={setCurrentBatchAndSave} progress={progress} />
+          <Flashcards words={activeWords} progress={progress} onMark={handleMark} />
+        </>
+      )}
+
+      {activeTab === "quiz" && (
+        <>
+          <BatchSelector batches={BATCH_NUMBERS} currentBatch={currentBatch} setCurrentBatch={setCurrentBatchAndSave} progress={progress} />
+          <Quiz words={activeWords} onMark={handleMark} />
+        </>
+      )}
+
+      {activeTab === "topics" && (
+        selectedTopic ? (
+          <>
+            <button className="back-link" onClick={() => setSelectedTopic(null)}>← Back to topics</button>
+            <Flashcards words={activeWords} progress={progress} onMark={handleMark} />
+          </>
+        ) : (
+          <TopicsView topics={TOPICS} onSelectTopic={setSelectedTopic} />
+        )
+      )}
+
+      <div className="reset-row">
+        <button className="reset-link" onClick={handleReset}>Reset progress</button>
+      </div>
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(<App />);
+</script>
+
+<script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<script>
+  if ("serviceWorker" in navigator) {
+    window.addEventListener("load", () => {
+      navigator.serviceWorker.register("./sw.js").catch((e) => console.error("SW registration failed:", e));
+    });
+  }
+</script>
+</body>
+</html>
